@@ -1,26 +1,23 @@
 package com.example.minimarketplace.dto;
 
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-
+import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 
-@Data
-public class ProductRequestDTO {
+public record ProductRequestDTO(
 
-    @NotBlank(message = "Product name is required")
-    private String name;
+        @NotBlank(message = "Product name is required")
+        @Size(min = 2, max = 200)
+        String name,
 
-    @NotBlank(message = "Product description is required")
-    private String description;
+        @Size(max = 2000)
+        String description,
 
-    @NotNull(message = "Price is required")
-    @Min(value = 0, message = "Price must be greater than or equal to 0")
-    private BigDecimal price;
+        @NotNull(message = "Price is required")
+        @DecimalMin(value = "0.01", message = "Price must be > 0")
+        @Digits(integer = 10, fraction = 2)
+        BigDecimal price,
 
-    @NotNull(message = "Quantity is required")
-    @Min(value = 0, message = "Quantity must be greater than or equal to 0")
-    private Integer quantity;
-}
+        @NotNull(message = "Quantity is required")
+        @Min(value = 0)
+        Integer quantity
+) {}
