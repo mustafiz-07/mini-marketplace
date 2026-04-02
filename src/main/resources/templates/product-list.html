@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments :: head('Products')}"></head>
+<body>
+
+<nav th:replace="~{fragments :: navbar}"></nav>
+
+<main class="page-wrap">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="container">
+      <div class="breadcrumb">
+        <a href="/">Home</a><span>›</span><span style="color:rgba(255,255,255,.7)">Products</span>
+      </div>
+      <h1>All Products</h1>
+      <p>Browse items from our local sellers</p>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- Search + Actions Row -->
+    <div style="display:flex;gap:1rem;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:2rem">
+      <form id="search-form" th:action="@{/products}" method="get" style="flex:1;max-width:500px">
+        <div class="search-bar">
+          <input id="search-input" type="search" name="search"
+                 th:value="${search}"
+                 placeholder="Search products by name or description…"
+                 autocomplete="off"/>
+          <button type="submit" class="btn btn--green btn--sm">Search</button>
+        </div>
+      </form>
+      <a href="/add-product" class="btn btn--primary btn--sm"
+         sec:authorize="hasRole('SELLER')">+ List Product</a>
+    </div>
+
+    <!-- Results info -->
+    <div th:if="${search != null and !search.isEmpty()}"
+         class="alert alert--info" data-dismiss style="margin-bottom:1.5rem">
+      🔍 Showing results for "<strong th:text="${search}"></strong>"
+      — <a href="/products">Clear search</a>
+    </div>
+
+    <!-- Products Grid -->
+    <div th:if="${products != null and !products.isEmpty()}" class="products-grid">
+      <div th:each="product : ${products}" class="product-card"
+           th:attr="data-product-id=${product.id}">
+        <div class="product-card__img">🛒</div>
+        <div class="product-card__body">
+          <div class="product-card__seller" th:text="'By ' + ${product.sellerName}">Seller</div>
+          <h3 th:text="${product.name}">Product Name</h3>
+          <p th:text="${product.description ?: 'No description.'}">Description</p>
+          <div class="product-card__footer">
+            <span class="product-card__price"
+                  th:text="'$' + ${#numbers.formatDecimal(product.price,1,2)}">$0.00</span>
+            <span th:if="${product.quantity > 0}"
+                  class="badge badge--in-stock"
+                  th:text="${product.quantity} + ' in stock'">In stock</span>
+            <span th:if="${product.quantity <= 0}"
+                  class="badge badge--out">Out of Stock</span>
+          </div>
+        </div>
+        <div style="padding:.75rem 1.25rem;padding-top:0;display:flex;gap:.5rem">
+          <a th:href="@{/products/{id}(id=${product.id})}"
+             class="btn btn--ghost btn--sm" style="flex:1;justify-content:center">Details</a>
+          <button th:if="${product.quantity > 0}"
+                  class="btn btn--primary btn--sm add-to-cart-btn"
+                  style="flex:1"
+                  th:attr="data-product-id=${product.id},data-product-name=${product.name},data-product-price=${product.price}">
+            Add to Cart
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div th:if="${products == null or products.isEmpty()}" class="empty-state">
+      <div class="empty-state__icon">🔍</div>
+      <h3>No products found</h3>
+      <p th:if="${search != null and !search.isEmpty()}">
+        No results for "<span th:text="${search}"></span>". Try a different keyword.
+      </p>
+      <p th:if="${search == null or search.isEmpty()}">
+        No products are available right now. Check back soon!
+      </p>
+      <div style="display:flex;gap:1rem;justify-content:center;margin-top:1.25rem;flex-wrap:wrap">
+        <a href="/products" class="btn btn--ghost">Clear Filter</a>
+        <a href="/register" class="btn btn--green" sec:authorize="!isAuthenticated()">Become a Seller</a>
+        <a href="/add-product" class="btn btn--green" sec:authorize="hasRole('SELLER')">+ List Product</a>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer th:replace="~{fragments :: footer}"></footer>
+<th:block th:replace="~{fragments :: scripts}"></th:block>
+</body>
+</html>
