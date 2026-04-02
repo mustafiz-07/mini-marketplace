@@ -66,9 +66,9 @@
           <a th:href="@{/products/{id}(id=${product.id})}"
              class="btn btn--ghost btn--sm" style="flex:1;justify-content:center">Details</a>
           <button th:if="${product.quantity > 0}"
-                  class="btn btn--primary btn--sm"
+                  class="btn btn--primary btn--sm add-to-cart-btn"
                   style="flex:1"
-                  th:onclick="|Cart.addItem(${product.id}, '${product.name}', '${product.price}', 1)|">
+                  th:attr="data-product-id=${product.id},data-product-name=${product.name},data-product-price=${product.price}">
             Add to Cart
           </button>
         </div>
