@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments :: head('List a Product')}"></head>
+<body>
+
+<nav th:replace="~{fragments :: navbar}"></nav>
+
+<main class="page-wrap">
+
+  <div class="page-header">
+    <div class="container">
+      <div class="breadcrumb">
+        <a href="/">Home</a><span>›</span>
+        <span style="color:rgba(255,255,255,.7)">List a Product</span>
+      </div>
+      <h1>List a New Product</h1>
+      <p>Fill in the details below to publish your item.</p>
+    </div>
+  </div>
+
+  <div class="container" style="display:flex;justify-content:center;padding-bottom:4rem">
+    <div class="form-card" style="max-width:640px;width:100%">
+
+      <div class="form-card__header">
+        <div class="form-card__logo">🌿 Mini<span>Market</span></div>
+        <h2>New Listing</h2>
+        <p>Your product will be visible to all buyers immediately.</p>
+      </div>
+
+      <!-- The form is submitted via JS fetch() in main.js -->
+      <form id="product-form"
+            th:attr="data-seller-id=${currentUser?.id}">
+
+        <div class="form-group">
+          <label for="name">Product Name *</label>
+          <input id="name" name="name" type="text"
+                 placeholder="e.g. Organic Honey 500g" required minlength="2" maxlength="200"/>
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea id="description" name="description"
+                    placeholder="Describe your product — materials, origin, usage tips…"
+                    maxlength="2000"></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="price">Price (USD) *</label>
+            <input id="price" name="price" type="number"
+                   step="0.01" min="0.01" placeholder="0.00" required/>
+          </div>
+          <div class="form-group">
+            <label for="quantity">Quantity *</label>
+            <input id="quantity" name="quantity" type="number"
+                   min="0" placeholder="10" required/>
+          </div>
+        </div>
+
+        <div id="form-error" class="alert alert--error" style="display:none"></div>
+
+        <button type="submit" class="btn btn--primary btn--full" style="margin-top:.5rem">
+          🚀 Publish Product
+        </button>
+      </form>
+
+      <div class="form-footer">
+        <a href="/products">← Back to Products</a>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer th:replace="~{fragments :: footer}"></footer>
+<th:block th:replace="~{fragments :: scripts}"></th:block>
+</body>
+</html>

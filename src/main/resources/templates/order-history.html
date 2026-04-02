@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments :: head('Order History')}"></head>
+<body>
+
+<nav th:replace="~{fragments :: navbar}"></nav>
+
+<main class="page-wrap">
+
+  <div class="page-header">
+    <div class="container">
+      <div class="breadcrumb">
+        <a href="/">Home</a><span>›</span>
+        <span style="color:rgba(255,255,255,.7)">Order History</span>
+      </div>
+      <h1>Your Orders</h1>
+      <p th:if="${currentUser != null}"
+         th:text="'All purchases made by ' + ${currentUser.name}">Orders</p>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- Summary stats -->
+    <div class="stats-row" th:if="${orders != null and !orders.isEmpty()}">
+      <div class="stat-card">
+        <div class="stat-card__number" th:text="${orders.size()}">0</div>
+        <div class="stat-card__label">Total Orders</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__number"
+             th:text="'$' + ${#numbers.formatDecimal(orders.stream().mapToDouble(o -> o.totalPrice.doubleValue()).sum(), 1, 2)}">
+          $0.00
+        </div>
+        <div class="stat-card__label">Total Spent</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__number"
+             th:text="${orders.stream().mapToInt(o -> o.items.size()).sum()}">0</div>
+        <div class="stat-card__label">Items Purchased</div>
+      </div>
+    </div>
+
+    <!-- Orders list -->
+    <div th:if="${orders != null and !orders.isEmpty()}">
+      <div th:each="order, iter : ${orders}" class="order-card">
+        <div class="order-card__header">
+          <span class="order-card__id" th:text="'Order #' + ${order.id}">Order #1</span>
+          <div class="order-card__meta">
+            <span class="order-card__date"
+                  th:text="${#temporals.format(order.orderDate, 'MMM dd, yyyy HH:mm')}">
+              Jan 01, 2025
+            </span>
+            <span class="order-card__total"
+                  th:text="'$' + ${#numbers.formatDecimal(order.totalPrice,1,2)}">
+              $0.00
+            </span>
+            <span class="order-arrow">▼</span>
+          </div>
+        </div>
+
+        <!-- Order items (expanded by default for first, collapsed for rest) -->
+        <div class="order-card__items"
+             th:style="${iter.index == 0 ? '' : 'display:none'}">
+          <div th:if="${order.items != null and !order.items.isEmpty()}">
+            <div th:each="item : ${order.items}" class="order-item-row">
+              <span th:text="'Product #' + ${item.productId}">Product</span>
+              <span>× <strong th:text="${item.quantity}">1</strong></span>
+            </div>
+          </div>
+          <div th:if="${order.items == null or order.items.isEmpty()}"
+               style="padding:.75rem 0;color:var(--text-light);font-size:.88rem">
+            No item details available.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div th:if="${orders == null or orders.isEmpty()}" class="empty-state">
+      <div class="empty-state__icon">📋</div>
+      <h3>No orders yet</h3>
+      <p>You haven't placed any orders. Start shopping!</p>
+      <a href="/products" class="btn btn--green" style="margin-top:1.25rem">Browse Products</a>
+    </div>
+
+  </div>
+</main>
+
+<footer th:replace="~{fragments :: footer}"></footer>
+<th:block th:replace="~{fragments :: scripts}"></th:block>
+</body>
+</html>

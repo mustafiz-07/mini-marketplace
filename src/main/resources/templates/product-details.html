@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments :: head(${product?.name ?: 'Product Details'})}"></head>
+<body>
+
+<nav th:replace="~{fragments :: navbar}"></nav>
+
+<main class="page-wrap">
+
+  <div class="page-header">
+    <div class="container">
+      <div class="breadcrumb">
+        <a href="/">Home</a><span>›</span>
+        <a href="/products">Products</a><span>›</span>
+        <span style="color:rgba(255,255,255,.7)" th:text="${product?.name}">Product</span>
+      </div>
+      <h1 th:text="${product?.name}">Product Name</h1>
+    </div>
+  </div>
+
+  <div class="container" style="padding-top:0">
+    <div th:if="${product != null}" class="product-detail">
+
+      <!-- Image placeholder -->
+      <div class="product-detail__image">🛒</div>
+
+      <!-- Product Info -->
+      <div class="product-detail__info">
+        <span class="product-detail__seller-tag"
+              th:text="'🌿 Sold by ' + ${product.sellerName}">Seller</span>
+
+        <h1 th:text="${product.name}">Product Name</h1>
+
+        <div class="product-detail__price">
+          <span th:text="'$' + ${#numbers.formatDecimal(product.price,1,2)}">$0.00</span>
+          <small> / unit</small>
+        </div>
+
+        <div class="product-detail__desc">
+          <p th:text="${product.description ?: 'No description provided for this product.'}">
+            Description
+          </p>
+        </div>
+
+        <!-- Stock -->
+        <div style="margin-bottom:1.5rem">
+          <span th:if="${product.quantity > 0}"
+                class="badge badge--in-stock"
+                th:text="${product.quantity} + ' in stock'">In stock</span>
+          <span th:if="${product.quantity <= 0}"
+                class="badge badge--out">Out of Stock</span>
+        </div>
+
+        <!-- Add to Cart (authenticated + in stock) -->
+        <div sec:authorize="isAuthenticated()" th:if="${product.quantity > 0}">
+          <div class="qty-control">
+            <label for="qty-input">Qty:</label>
+            <button id="qty-minus" class="btn btn--ghost btn--sm" type="button">−</button>
+            <input id="qty-input" type="number" value="1" min="1"
+                   th:max="${product.quantity}"/>
+            <button id="qty-plus" class="btn btn--ghost btn--sm" type="button">+</button>
+          </div>
+          <div style="display:flex;gap:1rem;flex-wrap:wrap">
+            <button id="add-to-cart-btn"
+                    class="btn btn--primary"
+                    th:attr="data-product-id=${product.id},
+                             data-product-name=${product.name},
+                             data-product-price=${product.price}">
+              🛒 Add to Cart
+            </button>
+            <a href="/products" class="btn btn--ghost">← Back</a>
+          </div>
+        </div>
+
+        <!-- Login to buy -->
+        <div sec:authorize="!isAuthenticated()" th:if="${product.quantity > 0}">
+          <p class="alert alert--info">
+            <a href="/login">Login</a> or <a href="/register">Register</a> to purchase this product.
+          </p>
+        </div>
+
+        <!-- Out of stock -->
+        <div th:if="${product.quantity <= 0}">
+          <p class="alert alert--warning">⚠️ This item is currently out of stock.</p>
+          <a href="/products" class="btn btn--ghost">← Browse Other Products</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error fallback -->
+    <div th:if="${product == null}" class="empty-state">
+      <div class="empty-state__icon">❌</div>
+      <h3>Product Not Found</h3>
+      <p>This product may have been removed.</p>
+      <a href="/products" class="btn btn--green" style="margin-top:1rem">Browse Products</a>
+    </div>
+  </div>
+
+</main>
+
+<footer th:replace="~{fragments :: footer}"></footer>
+<th:block th:replace="~{fragments :: scripts}"></th:block>
+</body>
+</html>
