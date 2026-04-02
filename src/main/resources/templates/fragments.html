@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<!-- ══ HEAD FRAGMENT ══════════════════════════════════════════ -->
+<head th:fragment="head(pageTitle)">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta th:name="_csrf"        th:content="${_csrf?.token}"/>
+  <meta th:name="_csrf_header" th:content="${_csrf?.headerName}"/>
+  <title th:text="${pageTitle} + ' — Mini Marketplace'">Mini Marketplace</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌿</text></svg>"/>
+</head>
+
+<!-- ══ NAVBAR FRAGMENT ════════════════════════════════════════ -->
+<nav th:fragment="navbar" class="navbar">
+  <div class="container navbar__inner">
+
+    <a href="/" class="navbar__brand">🌿 Mini<span>Market</span></a>
+
+    <button class="navbar__toggle" id="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
+
+    <ul class="navbar__links" id="nav-links">
+      <li><a href="/">Home</a></li>
+      <li><a href="/products">Products</a></li>
+
+      <!-- Authenticated links -->
+      <li sec:authorize="isAuthenticated()">
+        <a href="/order-history">
+          Orders
+        </a>
+      </li>
+      <li sec:authorize="hasRole('SELLER')">
+        <a href="/add-product">+ List Product</a>
+      </li>
+
+      <!-- Cart badge -->
+      <li sec:authorize="isAuthenticated()">
+        <a href="#" id="cart-link" onclick="showCart(); return false;"
+           style="position:relative">
+          🛒
+          <span id="cart-badge" style="
+            display:none; position:absolute; top:-6px; right:-8px;
+            background:var(--coral); color:white; border-radius:50%;
+            width:18px; height:18px; font-size:.65rem; font-weight:700;
+            align-items:center; justify-content:center;">0</span>
+        </a>
+      </li>
+
+      <!-- Auth buttons -->
+      <li sec:authorize="!isAuthenticated()">
+        <a href="/login">Login</a>
+      </li>
+      <li sec:authorize="!isAuthenticated()">
+        <a href="/register" class="btn--nav">Register</a>
+      </li>
+      <li sec:authorize="isAuthenticated()" style="display:flex;align-items:center;gap:.5rem">
+        <span style="color:rgba(255,255,255,.6);font-size:.82rem"
+              sec:authentication="name">user</span>
+        <form th:action="@{/logout}" method="post" style="margin:0">
+          <button type="submit"
+                  style="background:none;border:1px solid rgba(255,255,255,.3);
+                         color:rgba(255,255,255,.7);cursor:pointer;padding:.35rem .75rem;
+                         border-radius:7px;font-size:.82rem;font-family:'DM Sans',sans-serif">
+            Logout
+          </button>
+        </form>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Cart Drawer -->
+  <div id="cart-drawer" style="
+    display:none; position:fixed; top:0; right:0; bottom:0; width:380px; max-width:95vw;
+    background:var(--white); box-shadow:-8px 0 40px rgba(0,0,0,.18);
+    z-index:9998; flex-direction:column; overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:space-between;
+                padding:1.25rem 1.5rem; border-bottom:1px solid var(--ivory-200);
+                background:var(--green-50);">
+      <h3 style="margin:0;font-size:1.1rem">🛒 Your Cart</h3>
+      <button onclick="hideCart()"
+              style="background:none;border:none;cursor:pointer;font-size:1.4rem;
+                     color:var(--text-light)">×</button>
+    </div>
+    <div id="cart-items-container" style="flex:1;overflow-y:auto;padding:1rem 1.5rem"></div>
+    <div style="padding:1.25rem 1.5rem;border-top:1px solid var(--ivory-200);
+                background:var(--green-50);">
+      <div style="display:flex;justify-content:space-between;
+                  font-weight:700;font-size:1.1rem;margin-bottom:1rem">
+        <span>Total</span>
+        <span id="cart-total" style="color:var(--green-700)">$0.00</span>
+      </div>
+      <div sec:authorize="isAuthenticated()">
+        <button id="place-order-btn"
+                class="btn btn--primary btn--full"
+                th:attr="data-buyer-id=${buyerId ?: 0}">
+          Place Order
+        </button>
+      </div>
+      <div sec:authorize="!isAuthenticated()">
+        <a href="/login" class="btn btn--green btn--full">Login to Checkout</a>
+      </div>
+    </div>
+  </div>
+  <div id="cart-overlay" onclick="hideCart()"
+       style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9997"></div>
+</nav>
+
+<!-- ══ FOOTER FRAGMENT ════════════════════════════════════════ -->
+<footer th:fragment="footer">
+  <div class="container">
+    <p>© 2025 <strong style="color:var(--gold)">MiniMarket</strong> — Built with Spring Boot &amp; ☕</p>
+    <p style="margin-top:.4rem">
+      <a href="/products">Products</a> &nbsp;·&nbsp;
+      <a href="/register">Register</a> &nbsp;·&nbsp;
+      <a href="/login">Login</a>
+    </p>
+  </div>
+</footer>
+
+<!-- ══ SCRIPTS FRAGMENT ═══════════════════════════════════════ -->
+<th:block th:fragment="scripts">
+  <script th:src="@{/js/main.js}"></script>
+  <script>
+    function showCart() {
+      document.getElementById('cart-drawer').style.display  = 'flex';
+      document.getElementById('cart-overlay').style.display = 'block';
+      renderCartItems();
+    }
+    function hideCart() {
+      document.getElementById('cart-drawer').style.display  = 'none';
+      document.getElementById('cart-overlay').style.display = 'none';
+    }
+  </script>
+</th:block>
+
+</html>
