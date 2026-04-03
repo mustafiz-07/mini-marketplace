@@ -30,14 +30,14 @@
       </div>
       <div class="stat-card">
         <div class="stat-card__number"
-             th:text="'$' + ${#numbers.formatDecimal(orders.stream().mapToDouble(o -> o.totalPrice.doubleValue()).sum(), 1, 2)}">
+             th:text="${'$' + #numbers.formatDecimal(totalSpent, 1, 2)}">
           $0.00
         </div>
         <div class="stat-card__label">Total Spent</div>
       </div>
       <div class="stat-card">
         <div class="stat-card__number"
-             th:text="${orders.stream().mapToInt(o -> o.items.size()).sum()}">0</div>
+             th:text="${itemsPurchased}">0</div>
         <div class="stat-card__label">Items Purchased</div>
       </div>
     </div>
@@ -49,11 +49,11 @@
           <span class="order-card__id" th:text="'Order #' + ${order.id}">Order #1</span>
           <div class="order-card__meta">
             <span class="order-card__date"
-                  th:text="${#temporals.format(order.orderDate, 'MMM dd, yyyy HH:mm')}">
+              th:text="${order.orderDate != null ? #temporals.format(order.orderDate, 'MMM dd, yyyy HH:mm') : 'Date unavailable'}">
               Jan 01, 2025
             </span>
             <span class="order-card__total"
-                  th:text="'$' + ${#numbers.formatDecimal(order.totalPrice,1,2)}">
+              th:text="${order.totalPrice != null ? '$' + #numbers.formatDecimal(order.totalPrice,1,2) : '$0.00'}">
               $0.00
             </span>
             <span class="order-arrow">▼</span>
