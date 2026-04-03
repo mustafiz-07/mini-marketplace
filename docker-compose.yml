@@ -1,0 +1,44 @@
+services:
+
+  # ─── PostgreSQL Database ──────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: minimarketplace_db_container
+    environment:
+      POSTGRES_DB:       ${POSTGRES_DB:-mini_marketplace}
+      POSTGRES_USER:     ${POSTGRES_USER:-marketplace_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-marketplace_pass}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-marketplace_user} -d ${POSTGRES_DB:-mini_marketplace}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ─── Spring Boot Application ──────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: minimarketplace_app
+    ports:
+      - "8080:8080"
+    environment:
+      # Passed into application.properties via ${DB_URL} etc.
+      DB_URL:      jdbc:postgresql://db:5432/${POSTGRES_DB:-mini_marketplace}
+      DB_USERNAME: ${POSTGRES_USER:-marketplace_user}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-marketplace_pass}
+      # Spring profile (set to 'prod' disables SQL logging)
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    name: minimarketplace_postgres_data
