@@ -16,7 +16,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -96,4 +100,84 @@ public class OrderService {
     public List<Order> findAll() {
         return orderRepository.findAll();
     }
+
+    @Transactional(readOnly = true)
+    public List<SellerOrderView> findForSeller(Long sellerId) {
+        List<Order> orders = orderRepository.findOrdersForSellerWithItems(sellerId);
+
+        Set<Long> buyerIds = new HashSet<>();
+        Set<Long> productIds = new HashSet<>();
+        for (Order order : orders) {
+            buyerIds.add(order.getBuyerId());
+            for (OrderItem item : order.getItems()) {
+                productIds.add(item.getProductId());
+            }
+        }
+
+        Map<Long, String> buyerNameById = new HashMap<>();
+        Map<Long, String> buyerEmailById = new HashMap<>();
+        userRepository.findAllById(buyerIds).forEach(user -> {
+            buyerNameById.put(user.getId(), user.getName());
+            buyerEmailById.put(user.getId(), user.getEmail());
+        });
+
+        Map<Long, Product> productById = new HashMap<>();
+        productRepository.findAllById(productIds).forEach(product -> productById.put(product.getId(), product));
+
+        List<SellerOrderView> result = new ArrayList<>();
+        for (Order order : orders) {
+            List<SellerOrderLineItem> sellerItems = new ArrayList<>();
+            BigDecimal sellerTotal = BigDecimal.ZERO;
+
+            for (OrderItem item : order.getItems()) {
+                Product product = productById.get(item.getProductId());
+                if (product == null || !product.getSellerId().equals(sellerId)) {
+                    continue;
+                }
+
+                BigDecimal lineTotal = product.getPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
+                sellerTotal = sellerTotal.add(lineTotal);
+
+                sellerItems.add(new SellerOrderLineItem(
+                        item.getProductId(),
+                        product.getName(),
+                        item.getQuantity(),
+                        product.getPrice(),
+                        lineTotal
+                ));
+            }
+
+            if (!sellerItems.isEmpty()) {
+                result.add(new SellerOrderView(
+                        order.getId(),
+                        order.getBuyerId(),
+                        buyerNameById.getOrDefault(order.getBuyerId(), "Unknown"),
+                        buyerEmailById.getOrDefault(order.getBuyerId(), "-"),
+                        order.getOrderDate(),
+                        sellerTotal,
+                        sellerItems
+                ));
+            }
+        }
+
+        return result;
+    }
+
+    public record SellerOrderLineItem(
+            Long productId,
+            String productName,
+            Integer quantity,
+            BigDecimal unitPrice,
+            BigDecimal lineTotal
+    ) {}
+
+    public record SellerOrderView(
+            Long orderId,
+            Long buyerId,
+            String buyerName,
+            String buyerEmail,
+            LocalDateTime orderDate,
+            BigDecimal sellerTotal,
+            List<SellerOrderLineItem> items
+    ) {}
 }

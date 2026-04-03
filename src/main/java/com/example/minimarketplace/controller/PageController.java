@@ -8,6 +8,8 @@ import com.example.minimarketplace.service.OrderService;
 import com.example.minimarketplace.service.ProductService;
 import com.example.minimarketplace.service.UserService;
 import lombok.RequiredArgsConstructor;
+import java.math.BigDecimal;
+import java.util.List;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -110,13 +112,57 @@ public class PageController {
     // ── Order History ──────────────────────────────────────────────────────────
     @GetMapping("/order-history")
     public String orderHistory(Model model, Authentication auth) {
+        model.addAttribute("orders", List.of());
+        model.addAttribute("totalSpent", BigDecimal.ZERO);
+        model.addAttribute("itemsPurchased", 0);
+
         User user = resolveUser(auth);
+        if (user != null && user.getRole() == Role.SELLER) {
+            return "redirect:/seller/orders";
+        }
         if (user != null) {
-            model.addAttribute("orders", orderService.findByBuyer(user.getId()));
+            List<com.example.minimarketplace.model.Order> orders = orderService.findByBuyer(user.getId());
+            BigDecimal totalSpent = orders.stream()
+                    .map(com.example.minimarketplace.model.Order::getTotalPrice)
+                    .filter(java.util.Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            int itemsPurchased = orders.stream()
+                    .mapToInt(o -> o.getItems() != null ? o.getItems().size() : 0)
+                    .sum();
+
+            model.addAttribute("orders", orders);
+            model.addAttribute("totalSpent", totalSpent);
+            model.addAttribute("itemsPurchased", itemsPurchased);
             model.addAttribute("currentUser", user);
         }
         injectBuyerId(model, auth);
         return "order-history";
+    }
+
+    // ── Seller Orders Dashboard ───────────────────────────────────────────────
+    @GetMapping({"/seller/orders", "/seller/order"})
+    public String sellerOrders(Model model, Authentication auth) {
+        User seller = resolveUser(auth);
+        if (seller == null) {
+            return "redirect:/login";
+        }
+
+        List<OrderService.SellerOrderView> sellerOrders = orderService.findForSeller(seller.getId());
+        BigDecimal totalRevenue = sellerOrders.stream()
+                .map(OrderService.SellerOrderView::sellerTotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        int totalItemsSold = sellerOrders.stream()
+                .flatMap(order -> order.items().stream())
+                .mapToInt(OrderService.SellerOrderLineItem::quantity)
+                .sum();
+
+        model.addAttribute("sellerOrders", sellerOrders);
+        model.addAttribute("totalRevenue", totalRevenue);
+        model.addAttribute("totalItemsSold", totalItemsSold);
+        model.addAttribute("currentUser", seller);
+        injectBuyerId(model, auth);
+        return "seller-orders";
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────────

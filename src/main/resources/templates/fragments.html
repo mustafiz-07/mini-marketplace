@@ -26,9 +26,14 @@
       <li><a href="/products">Products</a></li>
 
       <!-- Authenticated links -->
-      <li sec:authorize="isAuthenticated()">
+      <li sec:authorize="hasRole('BUYER')">
         <a href="/order-history">
           Orders
+        </a>
+      </li>
+      <li sec:authorize="hasRole('SELLER')">
+        <a href="/seller/orders">
+          Seller Orders
         </a>
       </li>
       <li sec:authorize="hasRole('SELLER')">
