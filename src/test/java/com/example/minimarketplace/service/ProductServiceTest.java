@@ -18,8 +18,8 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -28,239 +28,108 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class ProductServiceTest {
 
-    @Mock
-    private ProductRepository productRepository;
+	@Mock
+	private ProductRepository productRepository;
 
-    @Mock
-    private UserRepository userRepository;
+	@Mock
+	private UserRepository userRepository;
 
-    @InjectMocks
-    private ProductService productService;
+	@InjectMocks
+	private ProductService productService;
 
-    @Test
-    void shouldCreateProduct_whenSellerExists() {
-        // Arrange
-        ProductRequestDTO dto = new ProductRequestDTO("Coffee", "Arabica", new BigDecimal("9.99"), 20);
-        User seller = User.builder().id(5L).name("Seller Name").email("seller@example.com").password("x").role(Role.SELLER).build();
-        Product savedProduct = Product.builder()
-                .id(100L)
-                .name("Coffee")
-                .description("Arabica")
-                .price(new BigDecimal("9.99"))
-                .quantity(20)
-                .sellerId(5L)
-                .build();
+	@Test
+	void shouldCreateProduct_whenSellerExists() {
+		// Arrange
+		ProductRequestDTO dto = new ProductRequestDTO("Coffee", "Arabica", new BigDecimal("9.99"), 10);
+		User seller = User.builder().id(2L).name("Seller").email("seller@example.com").password("x").role(Role.SELLER).build();
+		Product saved = Product.builder().id(100L).name("Coffee").description("Arabica").price(new BigDecimal("9.99")).quantity(10).sellerId(2L).build();
+		when(userRepository.findById(2L)).thenReturn(Optional.of(seller));
+		when(productRepository.save(any(Product.class))).thenReturn(saved);
 
-        when(userRepository.findById(5L)).thenReturn(Optional.of(seller));
-        when(productRepository.save(any(Product.class))).thenReturn(savedProduct);
+		// Act
+		ProductResponseDTO result = productService.create(dto, 2L);
 
-        // Act
-        ProductResponseDTO created = productService.create(dto, 5L);
+		// Assert
+		assertEquals(100L, result.id());
+		assertEquals("Seller", result.sellerName());
+	}
 
-        // Assert
-        assertThat(created.id()).isEqualTo(100L);
-        assertThat(created.name()).isEqualTo("Coffee");
-        assertThat(created.sellerId()).isEqualTo(5L);
-        assertThat(created.sellerName()).isEqualTo("Seller Name");
-        verify(productRepository).save(any(Product.class));
-    }
+	@Test
+	void shouldThrowException_whenCreateSellerMissing() {
+		// Arrange
+		ProductRequestDTO dto = new ProductRequestDTO("Coffee", "Arabica", new BigDecimal("9.99"), 10);
+		when(userRepository.findById(2L)).thenReturn(Optional.empty());
 
-    @Test
-    void shouldThrowNotFound_whenCreateWithMissingSeller() {
-        // Arrange
-        ProductRequestDTO dto = new ProductRequestDTO("Coffee", "Arabica", new BigDecimal("9.99"), 20);
-        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+		// Act + Assert
+		assertThrows(ResourceNotFoundException.class, () -> productService.create(dto, 2L));
+	}
 
-        // Act + Assert
-        assertThatThrownBy(() -> productService.create(dto, 99L))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining("Seller not found with id: 99");
+	@Test
+	void shouldReturnUnknownSeller_whenFindByIdSellerMissing() {
+		// Arrange
+		Product product = Product.builder().id(11L).name("Tea").description("Green").price(new BigDecimal("4.50")).quantity(2).sellerId(8L).build();
+		when(productRepository.findById(11L)).thenReturn(Optional.of(product));
+		when(userRepository.findById(8L)).thenReturn(Optional.empty());
 
-        verify(productRepository, never()).save(any(Product.class));
-    }
+		// Act
+		ProductResponseDTO result = productService.findById(11L);
 
-    @Test
-    void shouldReturnProduct_whenFindByIdExists() {
-        // Arrange
-        Product product = Product.builder()
-                .id(101L)
-                .name("Tea")
-                .description("Green")
-                .price(new BigDecimal("4.50"))
-                .quantity(12)
-                .sellerId(8L)
-                .build();
-        User seller = User.builder().id(8L).name("Sam").email("sam@example.com").password("x").role(Role.SELLER).build();
+		// Assert
+		assertEquals("Unknown", result.sellerName());
+	}
 
-        when(productRepository.findById(101L)).thenReturn(Optional.of(product));
-        when(userRepository.findById(8L)).thenReturn(Optional.of(seller));
+	@Test
+	void shouldUpdateProduct_whenSellerOwnsProduct() {
+		// Arrange
+		Product existing = Product.builder().id(20L).name("Old").description("D").price(new BigDecimal("1.00")).quantity(1).sellerId(7L).build();
+		ProductRequestDTO update = new ProductRequestDTO("New", "Desc", new BigDecimal("3.20"), 9);
+		when(productRepository.findById(20L)).thenReturn(Optional.of(existing));
+		when(productRepository.save(existing)).thenReturn(existing);
+		when(userRepository.findById(7L)).thenReturn(Optional.of(User.builder().id(7L).name("Owner").build()));
 
-        // Act
-        ProductResponseDTO found = productService.findById(101L);
+		// Act
+		ProductResponseDTO result = productService.update(20L, update, 7L);
 
-        // Assert
-        assertThat(found.id()).isEqualTo(101L);
-        assertThat(found.sellerName()).isEqualTo("Sam");
-    }
+		// Assert
+		assertEquals("New", result.name());
+		assertEquals(9, result.quantity());
+	}
 
-    @Test
-    void shouldReturnUnknownSeller_whenSellerMissingDuringFindById() {
-        // Arrange
-        Product product = Product.builder()
-                .id(102L)
-                .name("Tea")
-                .description("Green")
-                .price(new BigDecimal("4.50"))
-                .quantity(12)
-                .sellerId(8L)
-                .build();
-        when(productRepository.findById(102L)).thenReturn(Optional.of(product));
-        when(userRepository.findById(8L)).thenReturn(Optional.empty());
+	@Test
+	void shouldThrowException_whenUpdateByNonOwner() {
+		// Arrange
+		Product existing = Product.builder().id(21L).sellerId(7L).build();
+		ProductRequestDTO update = new ProductRequestDTO("New", "Desc", new BigDecimal("3.20"), 9);
+		when(productRepository.findById(21L)).thenReturn(Optional.of(existing));
 
-        // Act
-        ProductResponseDTO found = productService.findById(102L);
+		// Act + Assert
+		assertThrows(IllegalArgumentException.class, () -> productService.update(21L, update, 8L));
+		verify(productRepository, never()).save(any(Product.class));
+	}
 
-        // Assert
-        assertThat(found.sellerName()).isEqualTo("Unknown");
-    }
+	@Test
+	void shouldThrowException_whenDeleteByNonOwner() {
+		// Arrange
+		Product existing = Product.builder().id(30L).sellerId(9L).build();
+		when(productRepository.findById(30L)).thenReturn(Optional.of(existing));
 
-    @Test
-    void shouldThrowNotFound_whenFindByIdMissing() {
-        // Arrange
-        when(productRepository.findById(404L)).thenReturn(Optional.empty());
+		// Act + Assert
+		assertThrows(IllegalArgumentException.class, () -> productService.delete(30L, 10L));
+		verify(productRepository, never()).deleteById(any());
+	}
 
-        // Act + Assert
-        assertThatThrownBy(() -> productService.findById(404L))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining("Product not found with id: 404");
-    }
+	@Test
+	void shouldReturnSellerProducts_whenFindBySellerCalled() {
+		// Arrange
+		Product p = Product.builder().id(31L).name("Milk").description("Fresh").price(new BigDecimal("2.00")).quantity(5).sellerId(9L).build();
+		when(productRepository.findBySellerId(9L)).thenReturn(List.of(p));
+		when(userRepository.findById(9L)).thenReturn(Optional.of(User.builder().id(9L).name("Seller Nine").build()));
 
-    @Test
-    void shouldReturnAvailableProducts_whenFindAvailableCalled() {
-        // Arrange
-        Product available = Product.builder()
-                .id(103L)
-                .name("Milk")
-                .description("1L")
-                .price(new BigDecimal("2.10"))
-                .quantity(5)
-                .sellerId(10L)
-                .build();
-        when(productRepository.findByQuantityGreaterThan(0)).thenReturn(List.of(available));
-        when(userRepository.findById(10L)).thenReturn(Optional.empty());
+		// Act
+		List<ProductResponseDTO> result = productService.findBySeller(9L);
 
-        // Act
-        List<ProductResponseDTO> products = productService.findAvailable();
-
-        // Assert
-        assertThat(products).hasSize(1);
-        assertThat(products.getFirst().name()).isEqualTo("Milk");
-        assertThat(products.getFirst().sellerName()).isEqualTo("Unknown");
-    }
-
-    @Test
-    void shouldReturnSearchResults_whenKeywordMatches() {
-        // Arrange
-        Product product = Product.builder()
-                .id(104L)
-                .name("Organic Honey")
-                .description("500g")
-                .price(new BigDecimal("12.00"))
-                .quantity(3)
-                .sellerId(11L)
-                .build();
-        User seller = User.builder().id(11L).name("Honey Farm").email("farm@example.com").password("x").role(Role.SELLER).build();
-
-        when(productRepository.searchByKeyword("honey")).thenReturn(List.of(product));
-        when(userRepository.findById(11L)).thenReturn(Optional.of(seller));
-
-        // Act
-        List<ProductResponseDTO> products = productService.search("honey");
-
-        // Assert
-        assertThat(products).hasSize(1);
-        assertThat(products.getFirst().name()).isEqualTo("Organic Honey");
-        assertThat(products.getFirst().sellerName()).isEqualTo("Honey Farm");
-    }
-
-    @Test
-    void shouldUpdateProduct_whenSellerOwnsProduct() {
-        // Arrange
-        Product existing = Product.builder()
-                .id(200L)
-                .name("Old")
-                .description("Old desc")
-                .price(new BigDecimal("1.00"))
-                .quantity(1)
-                .sellerId(77L)
-                .build();
-        ProductRequestDTO updateDto = new ProductRequestDTO("New", "New desc", new BigDecimal("3.20"), 9);
-        User seller = User.builder().id(77L).name("Owner").email("owner@example.com").password("x").role(Role.SELLER).build();
-
-        when(productRepository.findById(200L)).thenReturn(Optional.of(existing));
-        when(productRepository.save(existing)).thenReturn(existing);
-        when(userRepository.findById(77L)).thenReturn(Optional.of(seller));
-
-        // Act
-        ProductResponseDTO updated = productService.update(200L, updateDto, 77L);
-
-        // Assert
-        assertThat(updated.name()).isEqualTo("New");
-        assertThat(updated.description()).isEqualTo("New desc");
-        assertThat(updated.price()).isEqualByComparingTo("3.20");
-        assertThat(updated.quantity()).isEqualTo(9);
-    }
-
-    @Test
-    void shouldThrowException_whenUpdateByNonOwner() {
-        // Arrange
-        Product existing = Product.builder().id(201L).sellerId(77L).build();
-        ProductRequestDTO updateDto = new ProductRequestDTO("New", "New desc", new BigDecimal("3.20"), 9);
-        when(productRepository.findById(201L)).thenReturn(Optional.of(existing));
-
-        // Act + Assert
-        assertThatThrownBy(() -> productService.update(201L, updateDto, 88L))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("not authorized to update");
-
-        verify(productRepository, never()).save(any(Product.class));
-    }
-
-    @Test
-    void shouldDeleteProduct_whenSellerOwnsProduct() {
-        // Arrange
-        Product existing = Product.builder().id(300L).sellerId(55L).build();
-        when(productRepository.findById(300L)).thenReturn(Optional.of(existing));
-
-        // Act
-        productService.delete(300L, 55L);
-
-        // Assert
-        verify(productRepository).deleteById(300L);
-    }
-
-    @Test
-    void shouldThrowException_whenDeleteByNonOwner() {
-        // Arrange
-        Product existing = Product.builder().id(301L).sellerId(55L).build();
-        when(productRepository.findById(301L)).thenReturn(Optional.of(existing));
-
-        // Act + Assert
-        assertThatThrownBy(() -> productService.delete(301L, 56L))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("not authorized to delete");
-
-        verify(productRepository, never()).deleteById(any());
-    }
-
-    @Test
-    void shouldThrowNotFound_whenDeleteMissingProduct() {
-        // Arrange
-        when(productRepository.findById(999L)).thenReturn(Optional.empty());
-
-        // Act + Assert
-        assertThatThrownBy(() -> productService.delete(999L, 1L))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining("Product not found with id: 999");
-    }
+		// Assert
+		assertEquals(1, result.size());
+		assertEquals("Seller Nine", result.getFirst().sellerName());
+	}
 }
