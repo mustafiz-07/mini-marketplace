@@ -28,6 +28,7 @@ USER marketplace
 
 # Expose Spring Boot default port
 EXPOSE 8080
+ENV SERVER_ADDRESS=0.0.0.0
 
 # Tuned JVM flags for containers:
 #   -XX:+UseContainerSupport   → respect cgroup memory limits
