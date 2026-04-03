@@ -29,9 +29,9 @@ jobs:
           --health-retries 5
 
     env:
-      DB_URL: jdbc:postgresql://localhost:5432/mini_marketplace
-      DB_USERNAME: marketplace_user
-      DB_PASSWORD: marketplace_pass
+      DB_URL: ${{ secrets.RENDER_DB_URL || 'jdbc:postgresql://localhost:5432/mini_marketplace' }}
+      DB_USERNAME: ${{ secrets.RENDER_DB_USERNAME || 'marketplace_user' }}
+      DB_PASSWORD: ${{ secrets.RENDER_DB_PASSWORD || 'marketplace_pass' }}
 
     steps:
       - name: Checkout source
