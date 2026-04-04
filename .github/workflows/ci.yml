@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - develop
+      - "feature/**"
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: mini_marketplace
+          POSTGRES_USER: marketplace_user
+          POSTGRES_PASSWORD: marketplace_pass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U marketplace_user -d mini_marketplace"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DB_URL: ${{ secrets.RENDER_DB_URL || 'jdbc:postgresql://localhost:5432/mini_marketplace' }}
+      DB_USERNAME: ${{ secrets.RENDER_DB_USERNAME || 'marketplace_user' }}
+      DB_PASSWORD: ${{ secrets.RENDER_DB_PASSWORD || 'marketplace_pass' }}
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Ensure Maven wrapper is executable
+        run: chmod +x mvnw
+
+      - name: Build and run tests
+        run: ./mvnw -B clean verify
+
+      - name: Upload packaged JAR
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mini-marketplace-jar
+          path: target/*.jar
+          if-no-files-found: error
+          retention-days: 7

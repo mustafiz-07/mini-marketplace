@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Error')}"></head>
+<body>
+
+<nav th:replace="~{fragments :: navbar}"></nav>
+
+<main class="page-wrap auth-page" style="align-items:center">
+  <div style="text-align:center;padding:3rem 1rem;max-width:520px">
+    <div style="font-size:5rem;margin-bottom:1.5rem"
+         th:text="${status == 404 ? '🔍' : status == 403 ? '🔒' : '⚠️'}">⚠️</div>
+
+    <h1 style="font-size:5rem;color:var(--green-200);margin-bottom:.5rem"
+        th:text="${status ?: 500}">500</h1>
+
+    <h2 style="margin-bottom:1rem"
+        th:text="${status == 404 ? 'Page Not Found'
+                : status == 403 ? 'Access Denied'
+                : 'Something Went Wrong'}">Error</h2>
+
+    <p style="margin-bottom:2rem"
+       th:text="${message ?: 'An unexpected error occurred. Please try again.'}">
+      Error message.
+    </p>
+
+    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
+      <a href="/" class="btn btn--green">← Go Home</a>
+      <a href="/products" class="btn btn--ghost">Browse Products</a>
+    </div>
+  </div>
+</main>
+
+<footer th:replace="~{fragments :: footer}"></footer>
+<th:block th:replace="~{fragments :: scripts}"></th:block>
+</body>
+</html>
