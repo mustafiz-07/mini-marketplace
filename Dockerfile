@@ -1,5 +1,5 @@
 # ─── Stage 1: Build ───────────────────────────────────────────────
-FROM maven:3.9.6-eclipse-temurin-17 AS build
+FROM maven:3.9.6-eclipse-temurin-21 AS build
 WORKDIR /app
 
 # Copy pom.xml first — lets Docker cache the dependency layer
@@ -12,7 +12,7 @@ COPY src ./src
 RUN mvn clean package -DskipTests -B
 
 # ─── Stage 2: Run ─────────────────────────────────────────────────
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
 # Non-root user for security
@@ -28,6 +28,7 @@ USER marketplace
 
 # Expose Spring Boot default port
 EXPOSE 8080
+ENV SERVER_ADDRESS=0.0.0.0
 
 # Tuned JVM flags for containers:
 #   -XX:+UseContainerSupport   → respect cgroup memory limits
