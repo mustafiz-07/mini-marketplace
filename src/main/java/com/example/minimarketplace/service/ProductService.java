@@ -4,6 +4,7 @@ import com.example.minimarketplace.dto.ProductRequestDTO;
 import com.example.minimarketplace.dto.ProductResponseDTO;
 import com.example.minimarketplace.exception.ResourceNotFoundException;
 import com.example.minimarketplace.model.Product;
+import com.example.minimarketplace.model.Role;
 import com.example.minimarketplace.model.User;
 import com.example.minimarketplace.repository.ProductRepository;
 import com.example.minimarketplace.repository.UserRepository;
@@ -26,6 +27,9 @@ public class ProductService {
     public ProductResponseDTO create(ProductRequestDTO dto, Long sellerId) {
         User seller = userRepository.findById(sellerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Seller not found with id: " + sellerId));
+        if (seller.getRole() != Role.SELLER) {
+            throw new IllegalArgumentException("Only users with SELLER role can create products.");
+        }
 
         Product product = Product.builder()
                 .name(dto.name())

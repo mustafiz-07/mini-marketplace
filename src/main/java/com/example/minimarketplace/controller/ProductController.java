@@ -3,6 +3,7 @@ package com.example.minimarketplace.controller;
 import com.example.minimarketplace.dto.ProductRequestDTO;
 import com.example.minimarketplace.dto.ProductResponseDTO;
 import com.example.minimarketplace.service.ProductService;
+import com.example.minimarketplace.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,7 @@ import java.util.List;
 public class ProductController {
 
     private final ProductService productService;
+    private final UserService userService;
 
     @GetMapping
     public ResponseEntity<List<ProductResponseDTO>> getAll(
@@ -41,8 +43,10 @@ public class ProductController {
     @PostMapping
     public ResponseEntity<ProductResponseDTO> create(
             @Valid @RequestBody ProductRequestDTO dto,
-            @RequestParam Long sellerId) {
-        ProductResponseDTO created = productService.create(dto, sellerId);
+            @RequestParam(required = false) Long sellerId,
+            Authentication authentication) {
+        Long resolvedSellerId = resolveSellerId(authentication, sellerId);
+        ProductResponseDTO created = productService.create(dto, resolvedSellerId);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
@@ -50,15 +54,30 @@ public class ProductController {
     public ResponseEntity<ProductResponseDTO> update(
             @PathVariable Long id,
             @Valid @RequestBody ProductRequestDTO dto,
-            @RequestParam Long sellerId) {
-        return ResponseEntity.ok(productService.update(id, dto, sellerId));
+            @RequestParam(required = false) Long sellerId,
+            Authentication authentication) {
+        Long resolvedSellerId = resolveSellerId(authentication, sellerId);
+        return ResponseEntity.ok(productService.update(id, dto, resolvedSellerId));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @PathVariable Long id,
-            @RequestParam Long sellerId) {
-        productService.delete(id, sellerId);
+            @RequestParam(required = false) Long sellerId,
+            Authentication authentication) {
+        Long resolvedSellerId = resolveSellerId(authentication, sellerId);
+        productService.delete(id, resolvedSellerId);
         return ResponseEntity.noContent().build();
+    }
+
+    private Long resolveSellerId(Authentication authentication, Long fallbackSellerId) {
+        if (authentication != null && authentication.isAuthenticated()
+                && !"anonymousUser".equals(authentication.getName())) {
+            return userService.findByEmail(authentication.getName()).getId();
+        }
+        if (fallbackSellerId != null) {
+            return fallbackSellerId;
+        }
+        throw new IllegalArgumentException("Seller identity is required.");
     }
 }
