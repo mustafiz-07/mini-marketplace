@@ -3,6 +3,7 @@ package com.example.minimarketplace.security;
 import com.example.minimarketplace.model.User;
 import com.example.minimarketplace.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -71,10 +72,15 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/", "/login", "/register",
                     "/products", "/products/{id}",
-                    "/api/products", "/api/products/**",
                     "/api/users/register",
                     "/css/**", "/js/**", "/images/**", "/error"
                 ).permitAll()
+                // Public product reads
+                .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/**").permitAll()
+                // Seller-only product mutations
+                .requestMatchers(HttpMethod.POST, "/api/products", "/api/products/**").hasRole("SELLER")
+                .requestMatchers(HttpMethod.PUT, "/api/products/**").hasRole("SELLER")
+                .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasRole("SELLER")
                 // Seller-only endpoints
                 .requestMatchers(
                     "/add-product", "/seller/**",
