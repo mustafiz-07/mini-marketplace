@@ -4,6 +4,7 @@ import com.example.minimarketplace.dto.ProductRequestDTO;
 import com.example.minimarketplace.dto.ProductResponseDTO;
 import com.example.minimarketplace.exception.GlobalExceptionHandler;
 import com.example.minimarketplace.service.ProductService;
+import com.example.minimarketplace.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -36,6 +37,9 @@ class ProductControllerTest {
 
     @MockitoBean
     private ProductService productService;
+
+    @MockitoBean
+    private UserService userService;
 
     @Test
     void shouldReturnSearchedProducts_whenSearchParamProvided() throws Exception {

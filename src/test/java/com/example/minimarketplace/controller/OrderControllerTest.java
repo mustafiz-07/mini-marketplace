@@ -4,6 +4,7 @@ import com.example.minimarketplace.dto.OrderRequestDTO;
 import com.example.minimarketplace.exception.GlobalExceptionHandler;
 import com.example.minimarketplace.model.Order;
 import com.example.minimarketplace.service.OrderService;
+import com.example.minimarketplace.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -37,6 +38,9 @@ class OrderControllerTest {
 
     @MockitoBean
     private OrderService orderService;
+
+        @MockitoBean
+        private UserService userService;
 
     @Test
     void shouldPlaceOrder_whenValidRequest() throws Exception {
