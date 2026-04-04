@@ -42,4 +42,8 @@ public class Product {
     @NotNull(message = "Seller is required")
     @Column(name = "seller_id", nullable = false)
     private Long sellerId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "seller_id", insertable = false, updatable = false)
+    private User seller;
 }

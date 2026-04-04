@@ -23,6 +23,10 @@ public class Order {
     @Column(name = "buyer_id", nullable = false)
     private Long buyerId;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "buyer_id", insertable = false, updatable = false)
+    private User buyer;
+
     @Column(name = "order_date", nullable = false)
     private LocalDateTime orderDate;
 
